@@ -1,0 +1,1284 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>InfraScope · Overview</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%23181b1f'/%3E%3Cpath d='M2 11l3-4 3 2 3-5 3 4' stroke='%2373bf69' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #111217;
+    --panel: #181b1f;
+    --panel-head: #1f2226;
+    --border: #2c3235;
+    --text: #d8d9da;
+    --text-dim: #9da5b8;
+    --text-faint: #6e7683;
+    --green: #73bf69;
+    --red: #f2495c;
+    --orange: #ff9830;
+    --blue: #5794f2;
+    --yellow: #fade2a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font: 13px/1.45 -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-variant-numeric: tabular-nums; /* fixed-width digits: no jitter on refresh */
+    overflow-y: scroll;
+  }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: #2c3235; border-radius: 5px; border: 2px solid var(--bg); }
+  ::-webkit-scrollbar-thumb:hover { background: #3a4147; }
+  ::-webkit-scrollbar-track { background: transparent; }
+
+  /* ---------- header ---------- */
+  header {
+    display: flex; align-items: center; gap: 14px;
+    height: 46px; padding: 0 14px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 50;
+  }
+  .brand { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; white-space: nowrap; }
+  .brand svg { display: block; }
+  .crumbs { color: var(--text-dim); font-size: 12.5px; white-space: nowrap; }
+  .crumbs b { color: var(--text); font-weight: 500; }
+  .spacer { flex: 1; }
+
+  .search-wrap { position: relative; width: 320px; max-width: 38vw; }
+  .search-wrap input {
+    width: 100%; height: 30px; padding: 0 10px 0 30px;
+    background: var(--bg); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text); font-size: 12.5px; outline: none;
+  }
+  .search-wrap input:focus { border-color: var(--blue); }
+  .search-wrap .mag {
+    position: absolute; left: 9px; top: 8px; width: 13px; height: 13px;
+    color: var(--text-faint); pointer-events: none;
+  }
+  #search-results {
+    position: absolute; top: 34px; left: 0; right: 0;
+    background: var(--panel-head); border: 1px solid var(--border); border-radius: 4px;
+    max-height: 320px; overflow-y: auto; display: none;
+    box-shadow: 0 8px 24px rgba(0,0,0,.5); z-index: 60;
+  }
+  #search-results.open { display: block; }
+  .sr-item { padding: 7px 10px; cursor: pointer; display: flex; align-items: baseline; gap: 8px; }
+  .sr-item:hover, .sr-item.active { background: rgba(87,148,242,.15); }
+  .sr-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sr-sym { color: var(--text-dim); font-size: 11px; font-family: Consolas, monospace; }
+  .sr-exch { color: var(--text-faint); font-size: 10.5px; }
+  .sr-empty { padding: 10px; color: var(--text-faint); font-size: 12px; }
+
+  /* header mini ticker — looks like cluster health chips */
+  #ticker { display: flex; gap: 14px; margin-left: 6px; white-space: nowrap; overflow: hidden; }
+  .tk { font-size: 11.5px; color: var(--text-dim); font-family: Consolas, monospace; }
+  .tk .tk-n { color: var(--text-faint); }
+  .tk .tk-d.up { color: var(--green); }
+  .tk .tk-d.down { color: var(--red); }
+  .tk .tk-d.flat { color: var(--text-faint); }
+
+  .header-right { display: flex; align-items: center; gap: 10px; white-space: nowrap; }
+
+  /* settings dropdown (gear) */
+  .cfg-wrap { position: relative; }
+  #cfg-btn {
+    background: none; border: none; color: var(--text-dim);
+    font-size: 15px; cursor: pointer; padding: 2px 4px; line-height: 1;
+  }
+  #cfg-btn:hover { color: var(--text); }
+  #cfg-menu {
+    position: absolute; right: 0; top: 30px; z-index: 70; width: 248px;
+    background: var(--panel-head); border: 1px solid var(--border); border-radius: 4px;
+    padding: 10px 12px; box-shadow: 0 8px 24px rgba(0,0,0,.5);
+    display: flex; flex-direction: column; gap: 9px; font-size: 12px;
+  }
+  #cfg-menu[hidden] { display: none; }
+  #cfg-menu label { display: flex; align-items: center; gap: 7px; cursor: pointer; color: var(--text-dim); }
+  #cfg-menu label:hover { color: var(--text); }
+  #cfg-menu input[type=checkbox] { accent-color: var(--blue); }
+  #cfg-menu .cfg-row { display: flex; align-items: center; gap: 7px; color: var(--text-dim); }
+  #cfg-menu select {
+    background: var(--bg); color: var(--text); border: 1px solid var(--border);
+    border-radius: 3px; padding: 1px 4px; font-size: 12px;
+  }
+
+  /* stat-only mode: hide graphs, compact single-stat cards. align-items:start
+     keeps stat panels from stretching to the tall ranking panel's row height;
+     min/max is dropped so nothing wraps or overflows at narrow widths */
+  body.stat-only main { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); align-items: start; gap: 8px; }
+  body.stat-only .panel { min-height: 0; }
+  body.stat-only .p-chartwrap, body.stat-only .p-expand, body.stat-only .p-minmax { display: none; }
+  body.stat-only .p-head { border-bottom: none; padding-bottom: 0; }
+  body.stat-only .p-stats { padding: 2px 12px 10px; }
+  body.stat-only .p-val { font-size: 19px; }
+  body.stat-only .p-delta { margin-left: auto; }
+  body.stat-only .rank-panel { grid-column: span 2; }
+  @media (max-width: 660px) {
+    body.stat-only .rank-panel { grid-column: auto; }
+  }
+
+  /* KR color profile: red = up, blue = down */
+  body.kr-colors .p-delta.up   { color: var(--red);  background: rgba(242,73,92,.12); }
+  body.kr-colors .p-delta.down { color: var(--blue); background: rgba(87,148,242,.12); }
+  body.kr-colors .tk .tk-d.up   { color: var(--red); }
+  body.kr-colors .tk .tk-d.down { color: var(--blue); }
+  body.kr-colors .rank-body .r-pct.up   { color: var(--red); }
+  body.kr-colors .rank-body .r-pct.down { color: var(--blue); }
+
+  body.no-ticker #ticker { display: none; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; background: var(--green); box-shadow: 0 0 6px rgba(115,191,105,.7); }
+  .dot.bad { background: var(--orange); box-shadow: 0 0 6px rgba(255,152,48,.7); }
+  /* blue dot = real-name mode is active (disguise lifted) */
+  .dot.real { background: var(--blue); box-shadow: 0 0 6px rgba(87,148,242,.7); }
+  #clock { font-family: Consolas, monospace; font-size: 12px; color: var(--text-dim); }
+
+  /* ---------- toolbar ---------- */
+  .toolbar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px 4px;
+  }
+  .ranges { display: flex; border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
+  .ranges button {
+    background: var(--panel); color: var(--text-dim); border: none;
+    padding: 5px 12px; font-size: 11.5px; cursor: pointer; border-right: 1px solid var(--border);
+  }
+  .ranges button:last-child { border-right: none; }
+  .ranges button:hover { color: var(--text); }
+  .ranges button.sel { background: rgba(87,148,242,.18); color: var(--text); }
+  .toolbar .meta button:hover { color: var(--text); border-color: #3a4147; }
+  .toolbar .meta { color: var(--text-faint); font-size: 11.5px; margin-left: auto; display: flex; gap: 14px; align-items: center; }
+  .toolbar .meta button {
+    background: none; border: 1px solid var(--border); border-radius: 3px;
+    color: var(--text-dim); font-size: 11px; padding: 2px 9px; cursor: pointer;
+  }
+  .toolbar .meta button.off { opacity: .5; }
+  #refresh-ind { transition: opacity .2s; opacity: 0; color: var(--blue); }
+  #refresh-ind.on { opacity: 1; }
+
+  /* ---------- grid / panels ---------- */
+  main {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(390px, 1fr));
+    gap: 10px; padding: 10px 14px 20px;
+  }
+  .panel {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 3px;
+    display: flex; flex-direction: column; min-height: 250px;
+    transition: border-color .15s;
+  }
+  .panel:hover { border-color: #3a4147; }
+  .panel.wide { grid-column: 1 / -1; }
+  .panel.wide .p-chartwrap { height: 330px; }
+  .p-head {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 10px; border-bottom: 1px solid rgba(44,50,53,.6);
+    cursor: grab;
+  }
+  .p-head:active { cursor: grabbing; }
+  .panel.dragging { opacity: .45; border-color: var(--blue); }
+  .p-title { font-size: 12.5px; font-weight: 600; cursor: default; white-space: nowrap;
+             border-bottom: 1px dotted transparent; }
+  .panel:hover .p-title { border-bottom-color: var(--text-faint); } /* hints dblclick-rename */
+  .p-title input {
+    background: var(--bg); border: 1px solid var(--blue); border-radius: 3px;
+    color: var(--text); font-size: 12px; padding: 1px 5px; width: 130px; outline: none;
+  }
+  .p-metric { color: var(--text-faint); font-size: 10.5px; font-family: Consolas, monospace; }
+  .p-actions { margin-left: auto; display: flex; gap: 2px; opacity: 0; transition: opacity .15s; }
+  .panel:hover .p-actions { opacity: 1; }
+  .p-actions button {
+    background: none; border: none; color: var(--text-faint); cursor: pointer;
+    font-size: 13px; padding: 0 5px; line-height: 1;
+  }
+  .p-actions button:hover { color: var(--text); }
+  .p-stats { display: flex; align-items: baseline; gap: 10px; padding: 8px 12px 0; }
+  .p-val { font-size: 22px; font-weight: 600; letter-spacing: -.3px; }
+  .p-delta { font-size: 12px; font-weight: 600; padding: 1px 7px; border-radius: 3px; }
+  .p-delta.up   { color: var(--green); background: rgba(115,191,105,.12); }
+  .p-delta.down { color: var(--red);   background: rgba(242,73,92,.12); }
+  .p-delta.flat { color: var(--text-dim); background: rgba(157,165,184,.1); }
+  .p-minmax { color: var(--text-faint); font-size: 10.5px; margin-left: auto; font-family: Consolas, monospace; }
+  .p-chartwrap { position: relative; flex: 1; height: 160px; margin: 4px 6px 6px; }
+  .p-chartwrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .p-err {
+    position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
+    color: var(--text-faint); font-size: 12px; gap: 6px;
+  }
+  .panel.error .p-err { display: flex; }
+  .panel.error canvas { opacity: .15; }
+
+  /* ranking panel — disguised as a "top consumers" process table */
+  .rank-ctrl { margin-left: auto; display: flex; gap: 2px; align-items: center; }
+  .rank-ctrl button {
+    background: none; border: 1px solid var(--border); border-radius: 3px;
+    color: var(--text-faint); font-size: 10.5px; padding: 1px 7px; cursor: pointer;
+  }
+  .rank-ctrl button.sel { color: var(--text); background: rgba(87,148,242,.15); border-color: rgba(87,148,242,.4); }
+  .rank-ctrl .sep { width: 6px; }
+  .rank-body { flex: 1; overflow-y: auto; padding: 4px 6px 8px; }
+  .rank-body table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+  .rank-body td { padding: 3.5px 6px; border-bottom: 1px solid rgba(44,50,53,.45); }
+  .rank-body tr { cursor: pointer; }
+  .rank-body tr:hover td { background: rgba(87,148,242,.08); }
+  .rank-body .r-name { font-family: Consolas, monospace; color: var(--text); }
+  .rank-body .r-price { text-align: right; color: var(--text-dim); font-family: Consolas, monospace; }
+  .rank-body .r-pct { text-align: right; font-weight: 600; width: 70px; }
+  .rank-body .r-pct.up { color: var(--green); }
+  .rank-body .r-pct.down { color: var(--red); }
+  .rank-empty { color: var(--text-faint); font-size: 11.5px; padding: 12px 6px; }
+
+  .empty-hint {
+    grid-column: 1 / -1; text-align: center; color: var(--text-faint);
+    padding: 60px 0; font-size: 13px;
+  }
+
+  footer {
+    padding: 4px 14px 14px; color: var(--text-faint); font-size: 10.5px;
+    display: flex; gap: 16px;
+  }
+
+  /* ---------- chart tooltip ---------- */
+  #tooltip {
+    position: fixed; z-index: 100; pointer-events: none; display: none;
+    background: #22252b; border: 1px solid var(--border); border-radius: 3px;
+    padding: 5px 9px; font-size: 11px; font-family: Consolas, monospace;
+    box-shadow: 0 4px 14px rgba(0,0,0,.5); white-space: nowrap;
+  }
+  #tooltip .tt-t { color: var(--text-faint); }
+  #tooltip .tt-v { font-weight: 700; font-size: 12px; }
+
+  /* ---------- logs overlay (ESC) ---------- */
+  #logs-overlay {
+    position: fixed; inset: 0; z-index: 200; background: #0c0d10;
+    display: none; flex-direction: column;
+  }
+  #logs-overlay.open { display: flex; }
+  .lo-bar {
+    display: flex; align-items: center; gap: 10px; padding: 8px 14px;
+    background: var(--panel); border-bottom: 1px solid var(--border);
+    font-family: Consolas, monospace; font-size: 12px; color: var(--text-dim);
+  }
+  .lo-bar .dot { width: 7px; height: 7px; }
+  #logs-body {
+    flex: 1; overflow-y: auto; padding: 10px 16px;
+    font-family: Consolas, "Courier New", monospace; font-size: 12px; line-height: 1.55;
+    color: #aeb6c2;
+  }
+  .ll { white-space: pre; }
+  .ll .lt { color: #5d6570; }
+  .ll .li { color: #73bf69; }
+  .ll .ld { color: #5794f2; }
+  .ll .lw { color: #ff9830; }
+  .ll .ls { color: #b48ead; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <svg width="18" height="18" viewBox="0 0 16 16"><rect width="16" height="16" rx="3" fill="#22252b"/><path d="M2 11l3-4 3 2 3-5 3 4" stroke="#73bf69" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    InfraScope
+  </div>
+  <nav class="crumbs">prod-cluster-a&nbsp;/&nbsp;<b>overview</b></nav>
+  <div id="ticker"></div>
+  <div class="spacer"></div>
+  <div class="search-wrap">
+    <svg class="mag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+    <input id="search" placeholder="Add target  (press / to focus)" autocomplete="off" spellcheck="false">
+    <div id="search-results"></div>
+  </div>
+  <div class="header-right">
+    <div class="cfg-wrap">
+      <button id="cfg-btn" title="settings">⚙</button>
+      <div id="cfg-menu" hidden>
+        <label><input type="checkbox" data-k="statOnly"> stat-only panels (hide graphs)</label>
+        <label><input type="checkbox" data-k="vol"> rate bars (volume)</label>
+        <label><input type="checkbox" data-k="ticker"> header summary</label>
+        <label><input type="checkbox" data-k="krColors"> KR-style colors (red = up)</label>
+        <label><input type="checkbox" data-k="bootCovered"> start in logs view</label>
+        <div class="cfg-row">refresh interval
+          <select id="cfg-refresh">
+            <option value="10">10s</option>
+            <option value="20">20s</option>
+            <option value="60">60s</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <span id="conn-dot" class="dot" title="data link"></span>
+    <span id="clock">--:--:--</span>
+  </div>
+</header>
+
+<div class="toolbar">
+  <div class="ranges" id="ranges"></div>
+  <div class="meta">
+    <span id="refresh-ind">⟳ fetching…</span>
+    <span id="refresh-label">auto-refresh: 20s</span>
+    <span id="last-upd">updated —</span>
+    <button id="rank-btn" title="show/hide top consumers panel">procs: on</button>
+    <button id="kiosk-btn" title="auto-cover when this tab is hidden">kiosk: on</button>
+  </div>
+</div>
+
+<main id="grid"></main>
+
+<footer>
+  <span>InfraScope v2.4.1 · internal build</span>
+  <span>agents: <span id="agent-count">0</span> active</span>
+  <span id="scrape-label">retention: 90d · scrape interval 20s</span>
+</footer>
+
+<div id="tooltip"></div>
+
+<div id="logs-overlay">
+  <div class="lo-bar">
+    <span class="dot"></span>
+    <span>journalctl -f · prod-cluster-a · ingress / api / workers</span>
+  </div>
+  <div id="logs-body"></div>
+</div>
+
+<script>
+"use strict";
+
+/* ============================== state ============================== */
+const LS = { watch: "ifs.watch", range: "ifs.range", guard: "ifs.guard", rank: "ifs.rank",
+             rankPos: "ifs.rankpos", cfg: "ifs.cfg" };
+localStorage.removeItem("ifs.real"); // legacy key — real-name mode must never persist
+
+const RANGES = {
+  "24H": { range: "1d",  interval: "5m"  },
+  "7D":  { range: "5d",  interval: "30m" },
+  "30D": { range: "1mo", interval: "1d"  },
+  "90D": { range: "3mo", interval: "1d"  },
+  "1Y":  { range: "1y",  interval: "1d"  },
+};
+
+/* metric labels are picked to match the magnitude of the live value, so a
+   passing ops person never sees an impossible pairing like a fractional
+   queue depth or a six-figure ratio */
+const METRIC_BUCKETS = [
+  { max: 10,       names: ["cpu.load.avg", "io.wait.avg", "gc.pause.p99"] },
+  { max: 1000,     names: ["lat.p95.ms", "rtt.upstream.ms", "disk.await.ms"] },
+  { max: 1e6,      names: ["http.req.rate", "net.rx.kbps", "iops.read"] },
+  { max: Infinity, names: ["mem.rss.bytes", "net.rx.bytes", "disk.io.bytes"] },
+];
+
+let watch = loadJSON(LS.watch, null);
+if (!Array.isArray(watch)) {
+  watch = [
+    { symbol: "^KS11",     name: "KOSPI Composite",     alias: "cluster-main" },
+    { symbol: "005930.KS", name: "Samsung Electronics", alias: defaultAlias("005930.KS") },
+  ];
+  saveWatch();
+}
+let curRange = localStorage.getItem(LS.range) || "24H";
+if (!RANGES[curRange]) curRange = "24H";
+let showReal = false; // always boot disguised, never persisted
+
+const DEFAULT_CFG = { statOnly: false, vol: true, ticker: true, krColors: false, bootCovered: false, refresh: 20 };
+let cfg = { ...DEFAULT_CFG, ...loadJSON(LS.cfg, {}) };
+if (![10, 20, 60].includes(cfg.refresh)) cfg.refresh = 20;
+function saveCfg() { localStorage.setItem(LS.cfg, JSON.stringify(cfg)); }
+
+/* direction colors honoring the KR profile (red = up, blue = down) */
+function dirColor(up) {
+  if (cfg.krColors) return up ? "#f2495c" : "#5794f2";
+  return up ? "#73bf69" : "#f2495c";
+}
+function dirFill(up) {
+  if (cfg.krColors) return up ? "rgba(242,73,92,.22)" : "rgba(87,148,242,.22)";
+  return up ? "rgba(115,191,105,.22)" : "rgba(242,73,92,.22)";
+}
+
+const panelData = new Map();   // symbol -> {t:[], c:[], meta:{}, err:string|null}
+const panelEls  = new Map();   // symbol -> {root, canvas, ...}
+let refreshTimer = null;
+
+/* ============================== utils ============================== */
+function loadJSON(key, fallback) {
+  try { const v = JSON.parse(localStorage.getItem(key)); return v ?? fallback; }
+  catch { return fallback; }
+}
+function saveWatch() { localStorage.setItem(LS.watch, JSON.stringify(watch)); }
+
+function hashStr(s) {
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0;
+  return h;
+}
+function defaultAlias(symbol) {
+  return "node-" + hashStr(symbol).toString(16).padStart(8, "0").slice(0, 4);
+}
+/* exchanges rendered as cloud zones so the dropdown never says KOSPI/NYSE */
+const ZONE_MAP = [
+  ["KOSPI", "ap-ne2-a"], ["KOSDAQ", "ap-ne2-b"], ["KOREA", "ap-ne2-a"],
+  ["NYSE", "us-east-1a"], ["NASDAQ", "us-east-1b"], ["AMEX", "us-east-1c"],
+  ["XETRA", "eu-cent-1a"], ["FRANKFURT", "eu-cent-1b"], ["LSE", "eu-west-2a"],
+  ["LONDON", "eu-west-2a"], ["TOKYO", "ap-ne1-a"], ["OSAKA", "ap-ne1-b"],
+  ["HKSE", "ap-east-1a"], ["HONG", "ap-east-1a"], ["SHANGHAI", "ap-east-1b"],
+  ["SHENZHEN", "ap-east-1c"], ["SES", "ap-se1-a"], ["SINGAPORE", "ap-se1-a"],
+  ["CCC", "edge-cache"], ["CCY", "edge-cache"],
+];
+const ZONE_FALLBACK = ["us-west-2a", "eu-west-1a", "ap-se2-a", "us-east-2b"];
+function zoneFor(x) {
+  const e = (x.exchDisp || x.exchange || "").toUpperCase();
+  if (!e) return "local";
+  for (const [key, zone] of ZONE_MAP) if (e.includes(key)) return zone;
+  return ZONE_FALLBACK[hashStr(e) % ZONE_FALLBACK.length];
+}
+
+function metricName(symbol, value) {
+  if (value == null || !isFinite(value)) return "gauge.value";
+  const bucket = METRIC_BUCKETS.find(b => Math.abs(value) < b.max);
+  return bucket.names[hashStr(symbol + "m") % bucket.names.length];
+}
+
+function fmtNum(n) {
+  if (n == null || !isFinite(n)) return "—";
+  const abs = Math.abs(n);
+  const dec = abs >= 10000 ? 0 : abs >= 10 ? 2 : 4;
+  return n.toLocaleString("en-US", { maximumFractionDigits: dec, minimumFractionDigits: 0 });
+}
+function fmtSI(n) {
+  if (n == null || !isFinite(n)) return "";
+  const abs = Math.abs(n);
+  if (abs >= 1e9) return (n / 1e9).toFixed(1) + "B";
+  if (abs >= 1e6) return (n / 1e6).toFixed(1) + "M";
+  if (abs >= 1e3) return (n / 1e3).toFixed(1) + "K";
+  if (abs >= 100) return n.toFixed(0);
+  return n.toFixed(1);
+}
+function fmtTime(ts, intraday) {
+  const d = new Date(ts * 1000);
+  if (intraday) {
+    return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+  }
+  return String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+function fmtTimeFull(ts, intraday) {
+  const d = new Date(ts * 1000);
+  const md = String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  if (!intraday) return md;
+  return md + " " + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+}
+/* axis/tooltip time format inferred from the data itself (domestic and
+   overseas feeds have different granularities for the same range):
+   sub-hour step within ~1 day -> HH:MM, otherwise dates */
+function granularity(d) {
+  const n = d.t.length;
+  if (n < 2) return { intra: false, multiday: false };
+  const span = d.t[n - 1] - d.t[0];
+  return { intra: span / (n - 1) < 3600, multiday: span > 36 * 3600 };
+}
+function debounce(fn, ms) {
+  let t;
+  return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
+}
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+/* ============================== data ============================== */
+/* every refresh batch gets an epoch; responses from an older batch (e.g. a
+   slow fetch from a previous range) are discarded instead of overwriting
+   newer data, and responses for removed panels are dropped */
+let fetchEpoch = 0;
+function stillWanted(symbol, epoch) {
+  return epoch === fetchEpoch && watch.some(w => w.symbol === symbol);
+}
+
+async function fetchSymbol(symbol, epoch) {
+  const rc = RANGES[curRange];
+  const url = `/api/chart?symbol=${encodeURIComponent(symbol)}&range=${rc.range}&interval=${rc.interval}`;
+  try {
+    const res = await fetch(url);
+    const j = await res.json();
+    const result = j?.chart?.result?.[0];
+    if (!res.ok || !result) throw new Error(j?.chart?.error?.description || j?.error || "no data");
+    const ts = result.timestamp || [];
+    const quote = result.indicators?.quote?.[0] || {};
+    const closes = quote.close || [];
+    const vols = quote.volume || [];
+    const t = [], c = [], v = [];
+    for (let i = 0; i < ts.length; i++) {
+      if (closes[i] != null && isFinite(closes[i])) {
+        t.push(ts[i]); c.push(closes[i]);
+        v.push(vols[i] != null && isFinite(vols[i]) ? vols[i] : 0);
+      }
+    }
+    if (!stillWanted(symbol, epoch)) return;
+    panelData.set(symbol, { t, c, v, meta: result.meta || {}, err: t.length ? null : "no samples" });
+  } catch (e) {
+    if (!stillWanted(symbol, epoch)) return;
+    const prev = panelData.get(symbol);
+    panelData.set(symbol, { t: prev?.t || [], c: prev?.c || [], v: prev?.v || [], meta: prev?.meta || {}, err: e.message || "fetch failed" });
+  }
+}
+
+async function refreshAll(showSpinner = true) {
+  refreshRank();   // fire-and-forget; independent of the panel epoch
+  refreshTicker();
+  if (!watch.length) { updateGlobalMeta(true); return; }
+  const epoch = ++fetchEpoch;
+  const ind = document.getElementById("refresh-ind");
+  if (showSpinner) ind.classList.add("on");
+  await Promise.allSettled(watch.map(w => fetchSymbol(w.symbol, epoch)));
+  if (epoch !== fetchEpoch) return; // a newer batch owns the UI now
+  ind.classList.remove("on");
+  const anyErr = watch.some(w => panelData.get(w.symbol)?.err);
+  updateGlobalMeta(!anyErr);
+  for (const w of watch) updatePanel(w.symbol);
+}
+
+function updateGlobalMeta(ok) {
+  document.getElementById("conn-dot").classList.toggle("bad", !ok);
+  const d = new Date();
+  document.getElementById("last-upd").textContent =
+    "updated " + String(d.getHours()).padStart(2, "0") + ":" +
+    String(d.getMinutes()).padStart(2, "0") + ":" + String(d.getSeconds()).padStart(2, "0");
+  document.getElementById("agent-count").textContent = watch.length;
+}
+
+function startAutoRefresh() {
+  clearInterval(refreshTimer);
+  refreshTimer = setInterval(() => {
+    if (document.visibilityState === "visible" &&
+        !document.getElementById("logs-overlay").classList.contains("open")) {
+      refreshAll(false);
+    }
+  }, cfg.refresh * 1000);
+}
+
+/* ============================== panels ============================== */
+function buildGrid() {
+  const grid = document.getElementById("grid");
+  grid.innerHTML = "";
+  panelEls.clear();
+  if (!watch.length && !rankOn) {
+    grid.innerHTML = `<div class="empty-hint">No targets configured — use the search box above to add one.</div>`;
+    return;
+  }
+  for (const w of watch) grid.appendChild(buildPanel(w));
+  if (rankOn) {
+    let pos = parseInt(localStorage.getItem(LS.rankPos) ?? "", 10);
+    if (!Number.isFinite(pos) || pos < 0) pos = watch.length;
+    grid.insertBefore(getRankPanel(), grid.children[pos] ?? null);
+  }
+}
+
+function buildPanel(w) {
+  const root = document.createElement("section");
+  root.className = "panel";
+  root.dataset.symbol = w.symbol;
+  root.innerHTML = `
+    <div class="p-head">
+      <span class="p-title"></span>
+      <span class="p-metric">gauge.value</span>
+      <div class="p-actions">
+        <button class="p-expand" title="expand">⤢</button>
+        <button class="p-close" title="remove">✕</button>
+      </div>
+    </div>
+    <div class="p-stats">
+      <span class="p-val">—</span>
+      <span class="p-delta flat">·</span>
+      <span class="p-minmax"></span>
+    </div>
+    <div class="p-chartwrap">
+      <canvas></canvas>
+      <div class="p-err">⚠ no data — exporter unreachable</div>
+    </div>`;
+
+  const els = {
+    root,
+    title: root.querySelector(".p-title"),
+    metric: root.querySelector(".p-metric"),
+    val: root.querySelector(".p-val"),
+    delta: root.querySelector(".p-delta"),
+    minmax: root.querySelector(".p-minmax"),
+    canvas: root.querySelector("canvas"),
+    wrap: root.querySelector(".p-chartwrap"),
+  };
+  panelEls.set(w.symbol, els);
+
+  root.querySelector(".p-close").addEventListener("click", () => removeSymbol(w.symbol));
+  root.querySelector(".p-expand").addEventListener("click", () => {
+    root.classList.toggle("wide");
+    requestAnimationFrame(() => drawChart(w.symbol));
+  });
+  els.title.addEventListener("dblclick", () => startRename(w.symbol));
+  els.canvas.addEventListener("mousemove", e => chartHover(e, w.symbol));
+  els.canvas.addEventListener("mouseleave", () => { hideTooltip(); drawChart(w.symbol); });
+
+  /* drag the panel by its header to reorder */
+  const head = root.querySelector(".p-head");
+  head.draggable = true;
+  head.addEventListener("dragstart", e => {
+    if (e.target.tagName === "INPUT") { e.preventDefault(); return; } // mid-rename
+    root.querySelector(".p-title input")?.blur(); // commit an open rename first
+    dragSymbol = w.symbol;
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", w.alias); // alias only — never the real symbol
+    e.dataTransfer.setDragImage(root, 24, 14);
+    requestAnimationFrame(() => { if (dragSymbol === w.symbol) root.classList.add("dragging"); });
+  });
+  head.addEventListener("dragend", e => endDrag(e, root));
+
+  new ResizeObserver(() => drawChart(w.symbol)).observe(els.wrap);
+  applyTitle(w.symbol);
+  return root;
+}
+
+/* drag & drop reordering: while dragging, the panel is live-moved in the DOM
+   as you hover other panels; on release the DOM order — including the ranking
+   panel's slot — is persisted. The before/after decision comes from the
+   pointer position, which stays stable even over full-row (expanded) panels;
+   a cancelled drag (ESC / dropped outside the window) reverts the preview. */
+let dragSymbol = null;
+const RANK_DRAG = "__rank__";
+const gridEl = document.getElementById("grid");
+
+gridEl.addEventListener("dragover", e => {
+  if (!dragSymbol) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = "move";
+  const dragged = dragSymbol === RANK_DRAG ? rankEl : panelEls.get(dragSymbol)?.root;
+  const target = e.target.closest(".panel");
+  if (!dragged || !target || target === dragged) return;
+  const r = target.getBoundingClientRect();
+  const fullRow = r.width > gridEl.clientWidth * 0.7; // expanded / spanning panels don't move aside
+  const before = fullRow ? e.clientY < r.top + r.height / 2
+                         : e.clientX < r.left + r.width / 2;
+  const ref = before ? target : target.nextSibling;
+  if (ref !== dragged && dragged.nextSibling !== ref) gridEl.insertBefore(dragged, ref);
+});
+gridEl.addEventListener("drop", e => { if (dragSymbol) e.preventDefault(); });
+
+function endDrag(e, root) {
+  root.classList.remove("dragging");
+  dragSymbol = null;
+  if (e.dataTransfer && e.dataTransfer.dropEffect === "none") {
+    buildGrid(); // cancelled: throw away the live preview
+    for (const w of watch) updatePanel(w.symbol);
+  } else {
+    persistOrderFromDom();
+  }
+}
+
+function persistOrderFromDom() {
+  const els = [...gridEl.querySelectorAll(".panel")];
+  const order = els.filter(el => el.dataset.symbol).map(el => el.dataset.symbol);
+  watch.sort((a, b) => order.indexOf(a.symbol) - order.indexOf(b.symbol));
+  saveWatch();
+  const ri = els.findIndex(el => el.classList.contains("rank-panel"));
+  if (ri >= 0) localStorage.setItem(LS.rankPos, String(ri));
+}
+
+function applyTitle(symbol) {
+  const w = watch.find(x => x.symbol === symbol);
+  const els = panelEls.get(symbol);
+  if (!w || !els) return;
+  els.title.textContent = showReal ? w.name : w.alias;
+  els.title.title = `${w.name}  (${w.symbol})`;
+}
+
+function startRename(symbol) {
+  const w = watch.find(x => x.symbol === symbol);
+  const els = panelEls.get(symbol);
+  if (!w || !els) return;
+  const input = document.createElement("input");
+  input.value = w.alias;
+  els.title.textContent = "";
+  els.title.appendChild(input);
+  input.focus(); input.select();
+  const done = save => {
+    if (save && input.value.trim()) w.alias = input.value.trim();
+    saveWatch();
+    applyTitle(symbol);
+  };
+  input.addEventListener("keydown", e => {
+    if (e.key === "Enter") done(true);
+    /* Escape is the boss key: it blurs this input (committing the rename)
+       and brings up the logs overlay via the global capture handler */
+  });
+  input.addEventListener("blur", () => done(true));
+}
+
+function updatePanel(symbol) {
+  const els = panelEls.get(symbol);
+  const d = panelData.get(symbol);
+  if (!els || !d) return;
+
+  els.root.classList.toggle("error", !!d.err && !d.c.length);
+
+  const last = d.c.length ? d.c[d.c.length - 1] : null;
+  const live = (curRange === "24H" && d.meta.regularMarketPrice != null) ? d.meta.regularMarketPrice : last;
+  const baseline = curRange === "24H"
+    ? (d.meta.chartPreviousClose ?? d.meta.previousClose ?? (d.c.length ? d.c[0] : null))
+    : (d.c.length ? d.c[0] : null);
+
+  els.val.textContent = fmtNum(live);
+  els.metric.textContent = metricName(symbol, live);
+  if (live != null && baseline) {
+    const pct = (live - baseline) / baseline * 100;
+    const cls = pct > 0.005 ? "up" : pct < -0.005 ? "down" : "flat";
+    els.delta.className = "p-delta " + cls;
+    els.delta.textContent = (pct > 0 ? "▲ +" : pct < 0 ? "▼ " : "") + pct.toFixed(2) + "%";
+  } else {
+    els.delta.className = "p-delta flat";
+    els.delta.textContent = "·";
+  }
+  if (d.c.length) {
+    els.minmax.textContent = `max ${fmtSI(Math.max(...d.c))} · min ${fmtSI(Math.min(...d.c))}`;
+  } else {
+    els.minmax.textContent = "";
+  }
+  drawChart(symbol);
+}
+
+/* ============================== chart ============================== */
+const PAD = { l: 46, r: 10, t: 8, b: 20 };
+
+function drawChart(symbol, hoverIdx = null) {
+  const els = panelEls.get(symbol);
+  const d = panelData.get(symbol);
+  if (!els) return;
+  const canvas = els.canvas;
+  const rect = els.wrap.getBoundingClientRect();
+  if (rect.width < 10 || rect.height < 10) return;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = Math.round(rect.width * dpr);
+  canvas.height = Math.round(rect.height * dpr);
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const W = rect.width, H = rect.height;
+  ctx.clearRect(0, 0, W, H);
+
+  if (!d || d.c.length < 2) return;
+
+  const g = granularity(d);
+  const baseline = curRange === "24H" ? (d.meta.chartPreviousClose ?? d.meta.previousClose) : null;
+
+  let lo = Math.min(...d.c), hi = Math.max(...d.c);
+  if (baseline != null) { lo = Math.min(lo, baseline); hi = Math.max(hi, baseline); }
+  const padV = (hi - lo) * 0.08 || hi * 0.002 || 1;
+  lo -= padV; hi += padV;
+
+  const iw = W - PAD.l - PAD.r, ih = H - PAD.t - PAD.b;
+  const n = d.c.length;
+  /* volume bars live in a small lower pane, request-rate style */
+  const vols = d.v || [];
+  const hasVol = cfg.vol && vols.length === n && vols.some(x => x > 0);
+  const volH = hasVol ? Math.max(16, ih * 0.18) : 0;
+  const priceB = H - PAD.b - volH - (hasVol ? 5 : 0); // bottom of the price pane
+  const X = i => PAD.l + (n === 1 ? iw / 2 : i / (n - 1) * iw);
+  const Y = v => PAD.t + (1 - (v - lo) / (hi - lo)) * (priceB - PAD.t);
+
+  /* grid + y labels */
+  ctx.strokeStyle = "rgba(44,50,53,.9)";
+  ctx.fillStyle = "#6e7683";
+  ctx.font = "10px Consolas, monospace";
+  ctx.textAlign = "right"; ctx.textBaseline = "middle";
+  ctx.lineWidth = 1;
+  const ticks = 4;
+  for (let i = 0; i <= ticks; i++) {
+    const v = lo + (hi - lo) * i / ticks;
+    const y = Math.round(Y(v)) + 0.5;
+    ctx.beginPath(); ctx.moveTo(PAD.l, y); ctx.lineTo(W - PAD.r, y); ctx.stroke();
+    ctx.fillText(fmtSI(v), PAD.l - 6, y);
+  }
+
+  /* x labels */
+  ctx.textBaseline = "top";
+  const xTicks = Math.min(5, n);
+  for (let i = 0; i < xTicks; i++) {
+    const idx = Math.round(i / (xTicks - 1 || 1) * (n - 1));
+    ctx.textAlign = i === 0 ? "left" : i === xTicks - 1 ? "right" : "center";
+    const lx = i === 0 ? PAD.l - 14 : i === xTicks - 1 ? W - 2 : X(idx);
+    ctx.fillText(fmtTime(d.t[idx], g.intra && !g.multiday), lx, H - PAD.b + 6);
+  }
+
+  /* baseline (prev close) */
+  if (baseline != null && baseline > lo && baseline < hi) {
+    ctx.strokeStyle = "rgba(157,165,184,.45)";
+    ctx.setLineDash([4, 4]);
+    const y = Math.round(Y(baseline)) + 0.5;
+    ctx.beginPath(); ctx.moveTo(PAD.l, y); ctx.lineTo(W - PAD.r, y); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  /* line + fill */
+  const ref = baseline != null ? baseline : d.c[0];
+  const up = d.c[n - 1] >= ref;
+  const color = dirColor(up);
+  const grad = ctx.createLinearGradient(0, PAD.t, 0, priceB);
+  grad.addColorStop(0, dirFill(up));
+  grad.addColorStop(1, "rgba(0,0,0,0)");
+
+  ctx.beginPath();
+  for (let i = 0; i < n; i++) i === 0 ? ctx.moveTo(X(i), Y(d.c[i])) : ctx.lineTo(X(i), Y(d.c[i]));
+  ctx.strokeStyle = color; ctx.lineWidth = 1.6; ctx.lineJoin = "round"; ctx.stroke();
+
+  ctx.lineTo(X(n - 1), priceB); ctx.lineTo(X(0), priceB); ctx.closePath();
+  ctx.fillStyle = grad; ctx.fill();
+
+  /* last point */
+  ctx.beginPath();
+  ctx.arc(X(n - 1), Y(d.c[n - 1]), 2.4, 0, Math.PI * 2);
+  ctx.fillStyle = color; ctx.fill();
+
+  /* volume bars */
+  if (hasVol) {
+    const maxV = Math.max(...vols);
+    const bw = Math.max(1, iw / n * 0.6);
+    const base = H - PAD.b;
+    ctx.fillStyle = "rgba(87,148,242,.38)";
+    for (let i = 0; i < n; i++) {
+      const bh = vols[i] / maxV * volH;
+      if (bh > 0.3) ctx.fillRect(X(i) - bw / 2, base - bh, bw, bh);
+    }
+  }
+
+  /* hover crosshair */
+  if (hoverIdx != null && hoverIdx >= 0 && hoverIdx < n) {
+    const hx = X(hoverIdx);
+    ctx.strokeStyle = "rgba(157,165,184,.45)";
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(hx, PAD.t); ctx.lineTo(hx, H - PAD.b); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.arc(hx, Y(d.c[hoverIdx]), 3, 0, Math.PI * 2);
+    ctx.fillStyle = color; ctx.fill();
+    ctx.strokeStyle = "#181b1f"; ctx.lineWidth = 1.5; ctx.stroke();
+  }
+}
+
+/* tooltip */
+const tooltipEl = document.getElementById("tooltip");
+function chartHover(e, symbol) {
+  const d = panelData.get(symbol);
+  const els = panelEls.get(symbol);
+  if (!d || d.c.length < 2) { hideTooltip(); return; }
+  const rect = els.canvas.getBoundingClientRect();
+  const iw = rect.width - PAD.l - PAD.r;
+  const x = e.clientX - rect.left - PAD.l;
+  const n = d.c.length;
+  const idx = Math.max(0, Math.min(n - 1, Math.round(x / iw * (n - 1))));
+  drawChart(symbol, idx); // redraw with crosshair
+  const g = granularity(d);
+  const baseline = curRange === "24H" ? (d.meta.chartPreviousClose ?? d.meta.previousClose) : d.c[0];
+  const pct = baseline ? ((d.c[idx] - baseline) / baseline * 100) : null;
+  const vol = (cfg.vol && d.v && d.v.length === n) ? d.v[idx] : 0;
+  tooltipEl.innerHTML =
+    `<div class="tt-t">${esc(fmtTimeFull(d.t[idx], g.intra))}</div>` +
+    `<div class="tt-v" style="color:${dirColor(!(pct != null && pct < 0))}">${fmtNum(d.c[idx])}` +
+    (pct != null ? ` <span style="font-weight:400">(${pct >= 0 ? "+" : ""}${pct.toFixed(2)}%)</span>` : "") + `</div>` +
+    (vol > 0 ? `<div class="tt-t">rate ${esc(fmtSI(vol))}</div>` : "");
+  tooltipEl.style.display = "block";
+  const tw = tooltipEl.offsetWidth;
+  let tx = e.clientX + 14;
+  if (tx + tw > window.innerWidth - 8) tx = e.clientX - tw - 14;
+  tooltipEl.style.left = tx + "px";
+  tooltipEl.style.top = (e.clientY - 14) + "px";
+}
+function hideTooltip() { tooltipEl.style.display = "none"; }
+
+/* ============================== watchlist ops ============================== */
+function addSymbol(symbol, name) {
+  if (watch.some(w => w.symbol === symbol)) return;
+  watch.push({ symbol, name, alias: defaultAlias(symbol) });
+  saveWatch();
+  buildGrid();
+  refreshAll();
+}
+function removeSymbol(symbol) {
+  watch = watch.filter(w => w.symbol !== symbol);
+  panelData.delete(symbol);
+  saveWatch();
+  buildGrid();
+  for (const w of watch) updatePanel(w.symbol);
+  updateGlobalMeta(true);
+}
+
+/* ============================== ranking panel ============================== */
+let rankOn = localStorage.getItem(LS.rank) !== "0";
+let rankMarket = "KOSPI", rankDir = "up";
+let rankSeq = 0, rankItems = [];
+let rankEl = null;
+
+function getRankPanel() {
+  if (rankEl) return rankEl;
+  rankEl = document.createElement("section");
+  rankEl.className = "panel rank-panel";
+  rankEl.innerHTML = `
+    <div class="p-head">
+      <span class="p-title">top consumers</span>
+      <span class="p-metric">cpu.usage.pct</span>
+      <div class="rank-ctrl">
+        <button data-m="KOSPI" class="sel">pool-a</button>
+        <button data-m="KOSDAQ">pool-b</button>
+        <span class="sep"></span>
+        <button data-d="up" class="sel">▲</button>
+        <button data-d="down">▼</button>
+      </div>
+      <div class="p-actions">
+        <button class="p-close" title="remove">✕</button>
+      </div>
+    </div>
+    <div class="rank-body"><div class="rank-empty">collecting…</div></div>`;
+  rankEl.querySelectorAll("[data-m]").forEach(b => b.addEventListener("click", () => {
+    rankMarket = b.dataset.m;
+    rankEl.querySelectorAll("[data-m]").forEach(x => x.classList.toggle("sel", x === b));
+    refreshRank();
+  }));
+  rankEl.querySelectorAll("[data-d]").forEach(b => b.addEventListener("click", () => {
+    rankDir = b.dataset.d;
+    rankEl.querySelectorAll("[data-d]").forEach(x => x.classList.toggle("sel", x === b));
+    refreshRank();
+  }));
+  rankEl.querySelector(".p-close").addEventListener("click", () => setRankOn(false));
+
+  /* the ranking panel reorders just like any other panel */
+  const rhead = rankEl.querySelector(".p-head");
+  rhead.draggable = true;
+  rhead.addEventListener("dragstart", e => {
+    dragSymbol = RANK_DRAG;
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", "top consumers");
+    e.dataTransfer.setDragImage(rankEl, 24, 14);
+    requestAnimationFrame(() => { if (dragSymbol === RANK_DRAG) rankEl.classList.add("dragging"); });
+  });
+  rhead.addEventListener("dragend", e => endDrag(e, rankEl));
+  return rankEl;
+}
+
+function setRankOn(on) {
+  rankOn = on;
+  localStorage.setItem(LS.rank, on ? "1" : "0");
+  renderRankBtn();
+  buildGrid();
+  for (const w of watch) updatePanel(w.symbol);
+  if (on) refreshRank();
+}
+
+async function refreshRank() {
+  if (!rankOn) return;
+  const seq = ++rankSeq;
+  try {
+    const res = await fetch(`/api/rank?market=${rankMarket}&dir=${rankDir}`);
+    const j = await res.json();
+    if (seq !== rankSeq) return;
+    rankItems = res.ok ? (j.items || []) : [];
+  } catch {
+    if (seq !== rankSeq) return;
+    rankItems = [];
+  }
+  renderRank();
+}
+
+function renderRank() {
+  if (!rankEl) return;
+  const body = rankEl.querySelector(".rank-body");
+  if (!rankItems.length) {
+    body.innerHTML = `<div class="rank-empty">no samples — collector idle</div>`;
+    return;
+  }
+  body.innerHTML = "<table>" + rankItems.map((it, i) => {
+    const label = showReal ? it.name : "proc-" + it.symbol.slice(2, 6);
+    const cls = it.changePct >= 0 ? "up" : "down";
+    const sign = it.changePct > 0 ? "+" : "";
+    return `<tr data-i="${i}" title="${esc(it.name)}  (${esc(it.symbol)})">
+      <td class="r-name">${esc(label)}</td>
+      <td class="r-price">${fmtNum(it.price)}</td>
+      <td class="r-pct ${cls}">${sign}${it.changePct.toFixed(2)}%</td></tr>`;
+  }).join("") + "</table>";
+  body.querySelectorAll("tr").forEach(tr => tr.addEventListener("click", () => {
+    const it = rankItems[+tr.dataset.i];
+    if (it) addSymbol(it.symbol, it.name);
+  }));
+}
+
+const rankBtn = document.getElementById("rank-btn");
+function renderRankBtn() {
+  rankBtn.textContent = "procs: " + (rankOn ? "on" : "off");
+  rankBtn.classList.toggle("off", !rankOn);
+}
+rankBtn.addEventListener("click", () => setRankOn(!rankOn));
+renderRankBtn();
+
+/* ============================== header ticker ============================== */
+const TICKERS = [
+  { symbol: "^KS11", alias: "zone-a",  name: "KOSPI" },
+  { symbol: "^KQ11", alias: "zone-b",  name: "KOSDAQ" },
+  { symbol: "KRW=X", alias: "edge-gw", name: "USD/KRW" },
+];
+const tickerData = new Map();
+
+async function refreshTicker() {
+  if (!cfg.ticker) return;
+  await Promise.allSettled(TICKERS.map(async tk => {
+    const res = await fetch(`/api/chart?symbol=${encodeURIComponent(tk.symbol)}&range=1d&interval=5m`);
+    const j = await res.json();
+    const r = j?.chart?.result?.[0];
+    if (!r) return;
+    const closes = (r.indicators?.quote?.[0]?.close || []).filter(x => x != null && isFinite(x));
+    const price = r.meta?.regularMarketPrice ?? closes[closes.length - 1];
+    const prev = r.meta?.chartPreviousClose ?? r.meta?.previousClose ?? closes[0];
+    if (price != null) tickerData.set(tk.symbol, { price, prev });
+  }));
+  renderTicker();
+}
+
+function renderTicker() {
+  document.getElementById("ticker").innerHTML = TICKERS.map(tk => {
+    const d = tickerData.get(tk.symbol);
+    if (!d) return "";
+    const pct = d.prev ? (d.price - d.prev) / d.prev * 100 : null;
+    const cls = pct == null ? "flat" : pct > 0.005 ? "up" : pct < -0.005 ? "down" : "flat";
+    const arrow = cls === "up" ? "▲" : cls === "down" ? "▼" : "·";
+    return `<span class="tk" title="${esc(tk.name)}"><span class="tk-n">${esc(showReal ? tk.name : tk.alias)}</span> ` +
+      `${fmtNum(d.price)} <span class="tk-d ${cls}">${arrow}${pct != null ? Math.abs(pct).toFixed(2) + "%" : ""}</span></span>`;
+  }).join("");
+}
+
+/* ============================== settings ============================== */
+const cfgBtn = document.getElementById("cfg-btn");
+const cfgMenu = document.getElementById("cfg-menu");
+
+function applyCfg() {
+  document.body.classList.toggle("stat-only", cfg.statOnly);
+  document.body.classList.toggle("kr-colors", cfg.krColors);
+  document.body.classList.toggle("no-ticker", !cfg.ticker);
+  document.getElementById("refresh-label").textContent = `auto-refresh: ${cfg.refresh}s`;
+  document.getElementById("scrape-label").textContent = `retention: 90d · scrape interval ${cfg.refresh}s`;
+  startAutoRefresh();
+  for (const w of watch) updatePanel(w.symbol); // redraw with new colors/volume setting
+  refreshTicker();
+  renderRank();
+}
+
+function syncCfgMenu() {
+  cfgMenu.querySelectorAll("input[type=checkbox]").forEach(cb => { cb.checked = !!cfg[cb.dataset.k]; });
+  document.getElementById("cfg-refresh").value = String(cfg.refresh);
+}
+cfgBtn.addEventListener("click", e => {
+  e.stopPropagation();
+  cfgMenu.hidden = !cfgMenu.hidden;
+  if (!cfgMenu.hidden) syncCfgMenu();
+});
+document.addEventListener("click", e => {
+  if (!cfgMenu.hidden && !cfgMenu.contains(e.target)) cfgMenu.hidden = true;
+});
+cfgMenu.querySelectorAll("input[type=checkbox]").forEach(cb => {
+  cb.addEventListener("change", () => { cfg[cb.dataset.k] = cb.checked; saveCfg(); applyCfg(); });
+});
+document.getElementById("cfg-refresh").addEventListener("change", e => {
+  cfg.refresh = parseInt(e.target.value, 10) || 20;
+  saveCfg(); applyCfg();
+});
+
+/* ============================== search ============================== */
+const searchInput = document.getElementById("search");
+const searchResults = document.getElementById("search-results");
+let srItems = [], srActive = -1;
+
+let searchSeq = 0; // invalidates in-flight responses (newer query, cleared input, blur)
+const doSearch = debounce(async q => {
+  const seq = ++searchSeq;
+  if (!q) { closeSearch(); return; }
+  let quotes = [];
+  try {
+    const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+    const j = await res.json();
+    quotes = (j.quotes || []).filter(x =>
+      x.symbol && ["EQUITY", "ETF", "INDEX"].includes(x.quoteType));
+  } catch { /* render empty */ }
+  if (seq !== searchSeq || searchInput.value.trim() !== q ||
+      document.activeElement !== searchInput) return; // stale response
+  renderSearch(quotes);
+}, 280);
+
+function renderSearch(quotes) {
+  srItems = quotes; srActive = -1;
+  if (!quotes.length) {
+    searchResults.innerHTML = `<div class="sr-empty">no matching targets</div>`;
+  } else {
+    searchResults.innerHTML = quotes.map((x, i) => `
+      <div class="sr-item" data-i="${i}">
+        <span class="sr-name">${esc(x.longname || x.shortname || x.symbol)}</span>
+        <span class="sr-sym">${esc(x.symbol)}</span>
+        <span class="sr-exch">${esc(zoneFor(x))}</span>
+      </div>`).join("");
+    searchResults.querySelectorAll(".sr-item").forEach(el => {
+      el.addEventListener("mousedown", e => { e.preventDefault(); pickSearch(+el.dataset.i); });
+    });
+  }
+  searchResults.classList.add("open");
+}
+function pickSearch(i) {
+  const x = srItems[i];
+  if (!x) return;
+  addSymbol(x.symbol, x.longname || x.shortname || x.symbol);
+  searchInput.value = "";
+  closeSearch();
+  searchInput.blur();
+}
+function closeSearch() {
+  searchResults.classList.remove("open");
+  searchResults.innerHTML = "";
+  srItems = []; srActive = -1;
+}
+function moveActive(dir) {
+  if (!srItems.length) return;
+  srActive = (srActive + dir + srItems.length) % srItems.length;
+  searchResults.querySelectorAll(".sr-item").forEach((el, i) =>
+    el.classList.toggle("active", i === srActive));
+}
+
+searchInput.addEventListener("input", () => doSearch(searchInput.value.trim()));
+searchInput.addEventListener("keydown", e => {
+  if (e.key === "ArrowDown") { e.preventDefault(); moveActive(1); }
+  else if (e.key === "ArrowUp") { e.preventDefault(); moveActive(-1); }
+  else if (e.key === "Enter") pickSearch(srActive >= 0 ? srActive : 0);
+  /* Escape is handled globally in capture phase (boss key) */
+});
+searchInput.addEventListener("blur", () => setTimeout(closeSearch, 150));
+
+/* ============================== ranges ============================== */
+function buildRanges() {
+  const box = document.getElementById("ranges");
+  box.innerHTML = "";
+  for (const key of Object.keys(RANGES)) {
+    const b = document.createElement("button");
+    b.textContent = key;
+    b.classList.toggle("sel", key === curRange);
+    b.addEventListener("click", () => {
+      curRange = key;
+      localStorage.setItem(LS.range, key);
+      box.querySelectorAll("button").forEach(x => x.classList.toggle("sel", x.textContent === key));
+      refreshAll();
+    });
+    box.appendChild(b);
+  }
+}
+
+/* ============================== boss key & hotkeys ============================== */
+const overlay = document.getElementById("logs-overlay");
+const logsBody = document.getElementById("logs-body");
+let logTimer = null;
+
+const SVCS = ["api-gateway", "auth-svc", "billing-worker", "k8s-scheduler", "ingress-nginx",
+              "redis-cache", "metrics-agent", "cron-runner", "search-indexer", "notif-dispatch"];
+const PATHS = ["/v2/health", "/v2/users/sync", "/api/jobs/queue", "/internal/metrics",
+               "/v1/sessions/refresh", "/api/billing/cycle", "/v2/configs/reload", "/healthz"];
+function rnd(a) { return a[Math.floor(Math.random() * a.length)]; }
+function fakeLogLine() {
+  const d = new Date();
+  const ts = `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}:${String(d.getSeconds()).padStart(2,"0")}.${String(d.getMilliseconds()).padStart(3,"0")}`;
+  const r = Math.random();
+  const svc = rnd(SVCS).padEnd(15);
+  if (r < 0.45) {
+    return `<span class="lt">${ts}</span> <span class="li">INFO </span> <span class="ls">[${svc}]</span> GET ${rnd(PATHS)} 200 ${Math.floor(Math.random()*48)+1}ms`;
+  } else if (r < 0.75) {
+    return `<span class="lt">${ts}</span> <span class="ld">DEBUG</span> <span class="ls">[${svc}]</span> reconcile loop complete (took ${Math.floor(Math.random()*300)+20}ms, ${Math.floor(Math.random()*40)} objects)`;
+  } else if (r < 0.92) {
+    return `<span class="lt">${ts}</span> <span class="li">INFO </span> <span class="ls">[${svc}]</span> worker heartbeat ok · lag=${Math.floor(Math.random()*120)}ms · inflight=${Math.floor(Math.random()*8)}`;
+  }
+  return `<span class="lt">${ts}</span> <span class="lw">WARN </span> <span class="ls">[${svc}]</span> retrying upstream call (attempt ${Math.floor(Math.random()*2)+1}/3, backoff ${Math.floor(Math.random()*800)+200}ms)`;
+}
+function pushLog() {
+  const div = document.createElement("div");
+  div.className = "ll";
+  div.innerHTML = fakeLogLine();
+  logsBody.appendChild(div);
+  while (logsBody.children.length > 400) logsBody.removeChild(logsBody.firstChild);
+  logsBody.scrollTop = logsBody.scrollHeight;
+}
+function toggleOverlay() {
+  const open = overlay.classList.toggle("open");
+  if (open) {
+    if (!logsBody.children.length) for (let i = 0; i < 40; i++) pushLog();
+    logTimer = setInterval(pushLog, 500 + Math.random() * 400);
+  } else {
+    clearInterval(logTimer);
+  }
+}
+
+/* tab-leave guard ("kiosk" toggle): when this TAB is hidden — switching to
+   another tab or minimizing the browser — the logs overlay engages, so the
+   return view is always safe. Merely focusing another window does NOT
+   trigger it: the dashboard stays glanceable on a second monitor or
+   side-by-side. Restore is manual (ESC) on purpose: switching back
+   shouldn't flash stocks while someone is standing there. */
+let autoGuard = localStorage.getItem(LS.guard) !== "0";
+const kioskBtn = document.getElementById("kiosk-btn");
+function renderKiosk() {
+  kioskBtn.textContent = "kiosk: " + (autoGuard ? "on" : "off");
+  kioskBtn.classList.toggle("off", !autoGuard);
+}
+kioskBtn.addEventListener("click", () => {
+  autoGuard = !autoGuard;
+  localStorage.setItem(LS.guard, autoGuard ? "1" : "0");
+  renderKiosk();
+});
+renderKiosk();
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden" && autoGuard &&
+      !overlay.classList.contains("open")) {
+    toggleOverlay();
+  }
+});
+
+/* boss key — registered in CAPTURE phase so a single ESC press works even
+   while typing in the search box or a rename field: it clears/blurs the
+   input and flips to the logs overlay in one keystroke */
+document.addEventListener("keydown", e => {
+  if (e.key !== "Escape") return;
+  e.preventDefault();
+  e.stopPropagation();
+  const ae = document.activeElement;
+  if (ae === searchInput) { searchInput.value = ""; ++searchSeq; closeSearch(); }
+  if (ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) ae.blur();
+  cfgMenu.hidden = true;
+  toggleOverlay();
+}, true);
+
+document.addEventListener("keydown", e => {
+  if (/^(INPUT|TEXTAREA)$/.test(document.activeElement?.tagName || "")) return;
+  if (e.key === "`") {
+    e.preventDefault();
+    showReal = !showReal;
+    document.getElementById("conn-dot").classList.toggle("real", showReal);
+    for (const w of watch) applyTitle(w.symbol);
+    renderTicker();
+    renderRank();
+  } else if (e.key === "/") {
+    e.preventDefault();
+    searchInput.focus();
+  }
+});
+
+/* ============================== clock & boot ============================== */
+setInterval(() => {
+  const d = new Date();
+  document.getElementById("clock").textContent =
+    `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}:${String(d.getSeconds()).padStart(2,"0")}`;
+}, 1000);
+
+buildRanges();
+buildGrid();
+applyCfg(); // also starts the auto-refresh timer
+refreshAll();
+if (cfg.bootCovered) toggleOverlay();
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") refreshAll(false);
+});
+</script>
+</body>
+</html>
