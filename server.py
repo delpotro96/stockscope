@@ -1,8 +1,12 @@
 """InfraScope local server.
 
-Serves the dashboard UI and proxies market-data requests to Yahoo Finance
-so the browser never talks to finance domains directly (no CORS issues,
-and nothing finance-related shows up in the address bar).
+Serves the dashboard UI (from extension/) and proxies market-data requests
+to Naver / Yahoo so the browser never talks to finance domains directly
+(no CORS issues, and nothing finance-related shows up in the address bar).
+
+The same extension/index.html also runs as a Chrome extension, where the
+in-page data layer (extension/marketdata.js) replaces this proxy. When served
+here over http://, that data layer stays dormant and the page uses /api below.
 
 Run:  python server.py
 Open: http://127.0.0.1:8137
@@ -21,6 +25,11 @@ from urllib.parse import parse_qs, quote, urlparse
 HOST = "127.0.0.1"   # local only on purpose -- never expose on the LAN
 PORT = 8137
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+UI_DIR = os.path.join(BASE_DIR, "extension")  # UI is shared with the extension
+
+STATIC_TYPES = {".js": "text/javascript; charset=utf-8",
+                ".css": "text/css; charset=utf-8",
+                ".png": "image/png"}
 
 UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/124.0 Safari/537.36")
@@ -366,8 +375,18 @@ class Handler(BaseHTTPRequestHandler):
 
         try:
             if path in ("/", "/index.html"):
-                with open(os.path.join(BASE_DIR, "index.html"), "rb") as f:
+                with open(os.path.join(UI_DIR, "index.html"), "rb") as f:
                     self._send(200, f.read(), "text/html; charset=utf-8")
+
+            elif path.count("/") == 1 and os.path.splitext(path)[1] in STATIC_TYPES:
+                # serve sibling static assets (marketdata.js, icon128.png) from UI_DIR
+                name = os.path.basename(path)
+                fpath = os.path.join(UI_DIR, name)
+                if os.path.isfile(fpath):
+                    with open(fpath, "rb") as f:
+                        self._send(200, f.read(), STATIC_TYPES[os.path.splitext(name)[1]])
+                else:
+                    self._send_json_error(404, "not found")
 
             elif path == "/api/search":
                 q = (qs.get("q") or [""])[0].strip()

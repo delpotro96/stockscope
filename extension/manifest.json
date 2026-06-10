@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "InfraScope",
+  "version": "2.4.1",
+  "description": "Cluster metrics overview — infrastructure monitoring dashboard.",
+  "action": {
+    "default_title": "InfraScope",
+    "default_icon": { "128": "icon128.png" }
+  },
+  "background": { "service_worker": "background.js" },
+  "side_panel": { "default_path": "index.html" },
+  "permissions": ["sidePanel"],
+  "host_permissions": [
+    "https://fchart.stock.naver.com/*",
+    "https://api.stock.naver.com/*",
+    "https://m.stock.naver.com/*",
+    "https://ac.stock.naver.com/*",
+    "https://query1.finance.yahoo.com/*",
+    "https://query2.finance.yahoo.com/*"
+  ],
+  "icons": { "128": "icon128.png" }
+}

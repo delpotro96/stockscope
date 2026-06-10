@@ -12,25 +12,34 @@
 - **해외 시세** — 미국 주식·지수·환율 등은 Yahoo Finance (거래소에 따라 지연 가능)
 - 한글 종목명 / 영문 / 종목코드 검색, 급등·급락 랭킹, 헤더 시장 요약 티커, 거래량 차트
 - 보스키(ESC), 탭 이탈 시 자동 가림, 별칭↔실명 토글 등 다층 위장 장치
-- **의존성 0** — Python 표준 라이브러리만 사용. 서버 파일 1개 + HTML 파일 1개
+- **두 가지 실행 방식** — Chrome 확장(서버리스) 또는 로컬 Python 서버. UI 한 벌(`extension/index.html`)을 공유
+- **의존성 0** — Python 표준 라이브러리만 사용, 확장도 외부 라이브러리 없음
 
-## 요구 사항
+## 실행 방법 (두 가지)
 
-- Python 3.8+ (외부 패키지 설치 불필요)
+### A. Chrome 확장 (권장 — Python 불필요)
 
-## 실행
+확장은 `host_permissions`로 CORS 없이 직접 시세를 가져오므로 별도 서버가 필요 없습니다.
+
+1. Chrome 주소창에 `chrome://extensions` 입력
+2. 우측 상단 **개발자 모드** 켜기
+3. **압축해제된 확장 프로그램 로드** → 이 저장소의 `extension/` 폴더 선택
+4. 툴바의 InfraScope 아이콘 클릭 → **사이드 패널**로 열림 (다른 작업 옆에 띄워두기 좋음)
+5. 전체 탭으로 보려면 설정(`⚙`) → **open in full tab**
+
+데이터·UI·위장 장치는 서버판과 100% 동일합니다.
+
+### B. 로컬 Python 서버
 
 **Windows**: `start.bat` 더블클릭 (서버 시작 후 브라우저 자동 오픈)
 
 **macOS / Linux**:
 
 ```sh
-python3 server.py
+python3 server.py    # Python 3.8+, 외부 패키지 불필요
 ```
 
-브라우저에서 http://127.0.0.1:8137 접속.
-
-서버는 `127.0.0.1`에만 바인딩되므로 같은 네트워크의 다른 사람은 접속할 수 없습니다. 포트를 바꾸려면 `server.py` 상단의 `PORT` 상수를 수정하세요.
+브라우저에서 http://127.0.0.1:8137 접속. 서버는 `127.0.0.1`에만 바인딩되므로 같은 네트워크의 다른 사람은 접속할 수 없습니다. 포트를 바꾸려면 `server.py` 상단의 `PORT` 상수를 수정하세요.
 
 ## 사용법
 
@@ -62,13 +71,16 @@ python3 server.py
 ## 동작 방식
 
 ```
-브라우저 ←HTTP→ server.py (127.0.0.1:8137) ←HTTPS→ 네이버 증권 / Yahoo Finance
+확장:   확장 페이지 ──(host_permissions, CORS 우회)──→ 네이버 증권 / Yahoo Finance
+서버:   브라우저 ←HTTP→ server.py (127.0.0.1:8137) ←HTTPS→ 네이버 증권 / Yahoo Finance
 ```
 
-- `/api/search` — 네이버 자동완성(국내) + Yahoo 검색(해외) 병합. 코스피/코스닥 지수는 직접 매핑
-- `/api/chart` — 국내 심볼(`6자리.KS/.KQ`, `^KS11`, `^KQ11`)은 네이버, 그 외는 Yahoo로 라우팅. 응답은 Yahoo v8 차트 형식으로 통일되어 프런트엔드는 출처를 구분하지 않음
-- `/api/rank` — 네이버 급등/급락 랭킹
-- 네이버 분봉의 누적 거래량은 서버에서 분당 증분으로 변환
+UI(`extension/index.html`)는 `apiGet()`을 통해 데이터에 접근합니다. 확장에서는 `marketdata.js`가 `window.InfraData`를 채워 직접 호출하고, Python 서버가 띄운 페이지(`http://`)에서는 `chrome.runtime.id`가 없어 그 계층이 비활성화되고 아래 `/api` 프록시로 폴백합니다. `server.py`와 `marketdata.js`는 동일한 변환 로직을 각각 Python/JS로 구현합니다.
+
+- `search` — 네이버 자동완성(국내) + Yahoo 검색(해외) 병합. 코스피/코스닥 지수는 직접 매핑
+- `chart` — 국내 심볼(`6자리.KS/.KQ`, `^KS11`, `^KQ11`)은 네이버, 그 외는 Yahoo로 라우팅. 응답은 Yahoo v8 차트 형식으로 통일되어 UI는 출처를 구분하지 않음
+- `rank` — 네이버 급등/급락 랭킹
+- 네이버 분봉의 누적 거래량은 분당 증분으로 변환
 - 10초 캐시 + 단일 비행(single-flight)으로 동일 요청의 업스트림 중복 호출 방지
 
 ## 주의 사항

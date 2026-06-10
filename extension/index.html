@@ -105,6 +105,12 @@
     background: var(--bg); color: var(--text); border: 1px solid var(--border);
     border-radius: 3px; padding: 1px 4px; font-size: 12px;
   }
+  #cfg-open-tab {
+    margin-top: 2px; background: var(--bg); color: var(--text-dim);
+    border: 1px solid var(--border); border-radius: 3px; padding: 4px 8px;
+    font-size: 12px; cursor: pointer; text-align: left;
+  }
+  #cfg-open-tab:hover { color: var(--text); border-color: #3a4147; }
 
   /* stat-only mode: hide graphs, compact single-stat cards. align-items:start
      keeps stat panels from stretching to the tall ranking panel's row height;
@@ -307,6 +313,7 @@
             <option value="60">60s</option>
           </select>
         </div>
+        <button id="cfg-open-tab" hidden>open in full tab ↗</button>
       </div>
     </div>
     <span id="conn-dot" class="dot" title="data link"></span>
@@ -343,8 +350,16 @@
   <div id="logs-body"></div>
 </div>
 
+<script src="marketdata.js"></script>
 <script>
 "use strict";
+
+/* data access: extension uses the in-page data layer (window.InfraData),
+   the Python-served page falls back to its local /api proxy */
+function apiGet(path) {
+  return window.InfraData ? window.InfraData.api(path) : fetch(path);
+}
+const inExtension = !!(typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.id);
 
 /* ============================== state ============================== */
 const LS = { watch: "ifs.watch", range: "ifs.range", guard: "ifs.guard", rank: "ifs.rank",
@@ -495,7 +510,7 @@ async function fetchSymbol(symbol, epoch) {
   const rc = RANGES[curRange];
   const url = `/api/chart?symbol=${encodeURIComponent(symbol)}&range=${rc.range}&interval=${rc.interval}`;
   try {
-    const res = await fetch(url);
+    const res = await apiGet(url);
     const j = await res.json();
     const result = j?.chart?.result?.[0];
     if (!res.ok || !result) throw new Error(j?.chart?.error?.description || j?.error || "no data");
@@ -970,7 +985,7 @@ async function refreshRank() {
   if (!rankOn) return;
   const seq = ++rankSeq;
   try {
-    const res = await fetch(`/api/rank?market=${rankMarket}&dir=${rankDir}`);
+    const res = await apiGet(`/api/rank?market=${rankMarket}&dir=${rankDir}`);
     const j = await res.json();
     if (seq !== rankSeq) return;
     rankItems = res.ok ? (j.items || []) : [];
@@ -1022,7 +1037,7 @@ const tickerData = new Map();
 async function refreshTicker() {
   if (!cfg.ticker) return;
   await Promise.allSettled(TICKERS.map(async tk => {
-    const res = await fetch(`/api/chart?symbol=${encodeURIComponent(tk.symbol)}&range=1d&interval=5m`);
+    const res = await apiGet(`/api/chart?symbol=${encodeURIComponent(tk.symbol)}&range=1d&interval=5m`);
     const j = await res.json();
     const r = j?.chart?.result?.[0];
     if (!r) return;
@@ -1082,6 +1097,17 @@ document.getElementById("cfg-refresh").addEventListener("change", e => {
   saveCfg(); applyCfg();
 });
 
+/* "open in full tab" — only useful from the side panel; opens the same UI as
+   a standalone extension tab. Shown only when running as an extension. */
+const openTabBtn = document.getElementById("cfg-open-tab");
+if (inExtension && chrome.tabs && chrome.tabs.create) {
+  openTabBtn.hidden = false;
+  openTabBtn.addEventListener("click", () => {
+    chrome.tabs.create({ url: chrome.runtime.getURL("index.html") });
+    cfgMenu.hidden = true;
+  });
+}
+
 /* ============================== search ============================== */
 const searchInput = document.getElementById("search");
 const searchResults = document.getElementById("search-results");
@@ -1093,7 +1119,7 @@ const doSearch = debounce(async q => {
   if (!q) { closeSearch(); return; }
   let quotes = [];
   try {
-    const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+    const res = await apiGet(`/api/search?q=${encodeURIComponent(q)}`);
     const j = await res.json();
     quotes = (j.quotes || []).filter(x =>
       x.symbol && ["EQUITY", "ETF", "INDEX"].includes(x.quoteType));
